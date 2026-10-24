@@ -58,3 +58,7 @@ Open `http://127.0.0.1:8000/` and `http://127.0.0.1:8000/docs`.
 - **500**: inspect Vercel Function Logs; check Python dependencies and `DATABASE_URL`.
 - **Database unavailable**: confirm the database allows connections from the hosted application and the connection string is valid.
 - **Frontend opens but API fails**: this package uses same-origin relative requests (`/health`, `/api/...`) so it does not need a hard-coded localhost URL.
+
+
+### Dashboard API behavior
+The dashboard now checks health, fleet telemetry, and database-backed incidents independently. If `DATABASE_URL` is missing, fleet telemetry should still render and incident history will show a database setup message instead of making the whole dashboard appear offline.

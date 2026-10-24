@@ -42,19 +42,40 @@ function escapeHtml(value) {
 async function refresh() {
   $("apiStatus").textContent = "Checking";
   $("apiMessage").textContent = "Connecting to service";
-  try {
-    const [health, fleet, incidents] = await Promise.all([
-      request("/health"), request("/api/fleet"), request("/api/incidents")
-    ]);
-    $("apiStatus").textContent = health.status === "ok" ? "Online" : "Issue";
+
+  // Check the API and fleet independently from database-backed incident history.
+  // A missing DATABASE_URL should not make the whole dashboard appear offline.
+  const healthResult = await request("/health").then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error })
+  );
+  const fleetResult = await request("/api/fleet").then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error })
+  );
+  const incidentsResult = await request("/api/incidents").then(
+    value => ({ ok: true, value }),
+    error => ({ ok: false, error })
+  );
+
+  if (healthResult.ok) {
+    $("apiStatus").textContent = healthResult.value.status === "ok" ? "Online" : "Issue";
     $("apiMessage").textContent = "FastAPI service reachable";
-    renderFleet(fleet);
-    renderIncidents(incidents);
-  } catch (error) {
+  } else {
     $("apiStatus").textContent = "Offline";
-    $("apiMessage").textContent = "Check deployment logs";
-    $("fleetBody").innerHTML = `<tr><td colspan="5" class="empty">Could not load fleet data: ${escapeHtml(error.message)}</td></tr>`;
-    $("incidentList").innerHTML = `<div class="empty">API unavailable. Check the Vercel deployment logs.</div>`;
+    $("apiMessage").textContent = `Health check failed: ${healthResult.error.message}`;
+  }
+
+  if (fleetResult.ok && Array.isArray(fleetResult.value)) {
+    renderFleet(fleetResult.value);
+  } else {
+    $("fleetBody").innerHTML = `<tr><td colspan="5" class="empty">Could not load fleet data: ${escapeHtml(fleetResult.error?.message || "Unexpected API response")}</td></tr>`;
+  }
+
+  if (incidentsResult.ok && Array.isArray(incidentsResult.value)) {
+    renderIncidents(incidentsResult.value);
+  } else {
+    $("incidentList").innerHTML = `<div class="empty">Incident history is unavailable (${escapeHtml(incidentsResult.error?.message || "Unexpected API response")}). Configure DATABASE_URL with a hosted PostgreSQL database to enable saved events.</div>`;
   }
 }
 $("refreshBtn").addEventListener("click", refresh);
