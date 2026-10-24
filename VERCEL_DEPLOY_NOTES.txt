@@ -1,0 +1,12 @@
+SKYGRID INDIA - Vercel deployment notes
+
+1. Push the contents of this folder to the GitHub repository root.
+2. In Vercel import, select Application Preset: FastAPI and Root Directory: ./.
+3. Do not use the multi-service import option for this single-app vercel.json.
+4. Deploy and test /health, /docs, and /api/fleet.
+5. Add DATABASE_URL with a hosted PostgreSQL connection string for /api/incidents and POST /api/simulate/tick.
+6. Never commit real database credentials to GitHub.
+
+This ZIP addresses startup crashes caused by attempting to create a local SQLite database on serverless deployment.
+It cannot guarantee a successful deployment in a specific Vercel account. If vc_handler/vercel_runtime import errors persist,
+capture the complete Vercel runtime logs because the platform runtime itself may be failing before the application runs.

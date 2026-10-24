@@ -9,16 +9,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
-from .database import Base, engine, get_db
+from .database import Base, DATABASE_CONFIGURED, engine, get_db
 from .models import Incident
+from fastapi import HTTPException
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Hosted PostgreSQL should be configured through Vercel's DATABASE_URL.
-    Base.metadata.create_all(bind=engine)
+    # Only initialize tables when a persistent database is explicitly configured.
+    # This prevents startup failure on Vercel when DATABASE_URL has not been added yet.
+    if DATABASE_CONFIGURED and engine is not None:
+        Base.metadata.create_all(bind=engine)
     yield
 
 app = FastAPI(
